@@ -13,3 +13,13 @@
 
 # Dependency directories (remove the comment below to include it)
 # vendor/
+
+bin/
+.vscode
+config.json
+public.key
+
+# Terraform
+.terraform*
+terraform.tfvars
+terraform.tfstate*
