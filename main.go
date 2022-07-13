@@ -93,13 +93,7 @@ func http_signurl(config AppConfig) http.HandlerFunc {
 
 		resp := HttpResponse{}
 
-		SignedURL, err := signUrl(config, url, tExpiration)
-		if err != nil {
-			w.WriteHeader(http.StatusBadRequest)
-			fmt.Fprintf(w, "Error: %s", err)
-			return
-		}
-
+		SignedURL := signUrl(config, url, tExpiration)
 		resp.SignedURL = SignedURL
 
 		fmt.Fprintf(w, "%+v\n", resp)
@@ -117,13 +111,13 @@ func stringToUnix(s string) (t time.Time, e error) {
 	return tm, nil
 }
 
-func signUrl(config AppConfig, url string, expiration time.Time) (signedurl string, err error) {
+func signUrl(config AppConfig, url string, expiration time.Time) (signedurl string) {
 	sep := '?'
 	if strings.ContainsRune(url, '?') {
 		sep = '&'
 	}
 	toSign := fmt.Sprintf("%s%cExpires=%d&KeyName=%s", url, sep, expiration.Unix(), config.KeySet)
 	sig := ed25519.Sign(config.binPrivateKey, []byte(toSign))
-	return fmt.Sprintf("%s&Signature=%s\n", toSign, base64.RawURLEncoding.EncodeToString(sig)), nil
+	return fmt.Sprintf("%s&Signature=%s", toSign, base64.RawURLEncoding.EncodeToString(sig))
 
 }
