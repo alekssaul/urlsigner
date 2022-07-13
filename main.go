@@ -7,13 +7,15 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 )
 
 type AppConfig struct {
-	Port       string `json:"Port"`
-	KeySet     string `json:"KeySet"`
-	PrivateKey string `json:"PrivateKey"`
+	Port          string `json:"Port"`
+	KeySet        string `json:"KeySet"`
+	PrivateKey    string `json:"PrivateKey"`
+	binPrivateKey []byte
 }
 
 type HttpResponse struct {
@@ -23,12 +25,7 @@ type HttpResponse struct {
 func main() {
 	fmt.Println("Starting the Application..")
 
-	//Initialize App Configuration
-	config := AppConfig{
-		Port: "8080",
-	}
-	config.KeySet = os.Getenv("KEYSET")
-	config.PrivateKey = os.Getenv("PRIVATEKEY")
+	config := initApp()
 
 	// HTTP Handlers
 	http.HandleFunc("/signurl", http_signurl(config))
@@ -39,6 +36,43 @@ func main() {
 
 }
 
+func initApp() (config AppConfig) {
+	//Initialize App Configuration
+	config.Port = os.Getenv("PORT")
+	if config.Port == "" {
+		config.Port = "8080"
+	}
+	config.KeySet = os.Getenv("KEYSET")
+	if config.KeySet == "" {
+		fmt.Printf("Must set \"KEYSET\" Environmental Variable\n")
+		os.Exit(1)
+	}
+
+	config.PrivateKey = os.Getenv("PRIVATEKEY")
+	if config.PrivateKey == "" {
+		fmt.Printf("Must set \"PRIVATEKEY\" Environmental Variable\n")
+		os.Exit(1)
+	}
+
+	keyset, err := base64.RawURLEncoding.DecodeString(config.PrivateKey)
+	if err != nil {
+		fmt.Printf("Could not parse the private key: %s\n", err)
+		os.Exit(1)
+	}
+
+	//keyset, _ := os.ReadFile("private.key")
+
+	if len(keyset) != ed25519.PrivateKeySize {
+		fmt.Printf("Private key Size is not valid. Expected: %v, Found %v\n", ed25519.PrivateKeySize, len(keyset))
+		os.Exit(1)
+	}
+
+	config.binPrivateKey = keyset
+
+	return config
+
+}
+
 func http_signurl(config AppConfig) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		url := r.URL.Query().Get("url")
@@ -46,7 +80,7 @@ func http_signurl(config AppConfig) http.HandlerFunc {
 
 		if url == "" || expiration == "" {
 			w.WriteHeader(http.StatusBadRequest)
-			fmt.Fprintf(w, "Bad Request, please provide \"url\" parameter")
+			fmt.Fprintf(w, "Bad Request, please provide \"url\" and \"expiration\" parameters")
 			return
 		}
 
@@ -68,7 +102,7 @@ func http_signurl(config AppConfig) http.HandlerFunc {
 
 		resp.SignedURL = SignedURL
 
-		fmt.Fprintf(w, "%+v", resp)
+		fmt.Fprintf(w, "%+v\n", resp)
 	}
 }
 
@@ -84,14 +118,12 @@ func stringToUnix(s string) (t time.Time, e error) {
 }
 
 func signUrl(config AppConfig, url string, expiration time.Time) (signedurl string, err error) {
-	keyset, err := base64.RawStdEncoding.DecodeString(config.KeySet)
-	if err != nil {
-		return signedurl, fmt.Errorf("Could not parse the private key: %s", err)
+	sep := '?'
+	if strings.ContainsRune(url, '?') {
+		sep = '&'
 	}
-
-	toSign := fmt.Sprintf("%s?Expires=%d&KeyName=%s", url, expiration.Unix(), config.KeySet)
-	signedurl = string(ed25519.Sign(keyset, []byte(toSign)))
-
-	return signedurl, nil
+	toSign := fmt.Sprintf("%s%cExpires=%d&KeyName=%s", url, sep, expiration.Unix(), config.KeySet)
+	sig := ed25519.Sign(config.binPrivateKey, []byte(toSign))
+	return fmt.Sprintf("%s&Signature=%s\n", toSign, base64.RawURLEncoding.EncodeToString(sig)), nil
 
 }
