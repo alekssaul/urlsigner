@@ -3,6 +3,7 @@ package main
 import (
 	"crypto/ed25519"
 	"encoding/base64"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"os"
@@ -60,8 +61,6 @@ func initApp() (config AppConfig) {
 		os.Exit(1)
 	}
 
-	//keyset, _ := os.ReadFile("private.key")
-
 	if len(keyset) != ed25519.PrivateKeySize {
 		fmt.Printf("Private key Size is not valid. Expected: %v, Found %v\n", ed25519.PrivateKeySize, len(keyset))
 		os.Exit(1)
@@ -95,8 +94,8 @@ func http_signurl(config AppConfig) http.HandlerFunc {
 
 		SignedURL := signUrl(config, url, tExpiration)
 		resp.SignedURL = SignedURL
-
-		fmt.Fprintf(w, "%+v\n", resp)
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(resp)
 	}
 }
 

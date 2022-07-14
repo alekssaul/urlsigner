@@ -23,3 +23,7 @@ public.key
 .terraform*
 terraform.tfvars
 terraform.tfstate*
+
+# Files that may get generated but not needed
+private.key
+helloworld.txt
