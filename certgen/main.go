@@ -7,6 +7,7 @@ import (
 	"os"
 )
 
+// Mostly based off of https://gist.github.com/mlevkov/8d1a481992494210cb2e5cc3a1c05221#file-signedrequests_modified-go-L149
 func main() {
 	keyFile, err := os.OpenFile("private.key", os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0600)
 	if err != nil {
