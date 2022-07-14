@@ -79,7 +79,7 @@ resource "google_network_services_edge_cache_service" "instance" {
     google_project_service.certificatemanager,
     google_project_service.networkservices
   ]
-  edge_ssl_certificates = ["projects/ce-alekssaul-340117/locations/global/certificates/stream-example-com"]
+  edge_ssl_certificates = [var.certificatemanager_certificate_location]
   routing {
     host_rule {
       description  = "host rule description"
@@ -159,3 +159,14 @@ resource "google_secret_manager_secret_iam_member" "cloud_run" {
   role = "roles/secretmanager.secretAccessor"
   member = format("serviceAccount:%s-compute@developer.gserviceaccount.com",data.google_project.project.number)
 }
+
+// Blocked by https://github.com/hashicorp/terraform-provider-google/pull/12092
+# resource "google_certificate_manager_certificate" "media_cdn" {
+#   name        = replace(var.domain_name, ".", "-")
+#   description = "The default cert"
+#   scope       = "EDGE_CACHE"
+#   self_managed {
+#     certificate_pem = file("${path.module}/assets/mediacdn_public.pem")
+#     private_key_pem = file("${path.module}/assets/mediacdn_privkey.pem")
+#   }
+# }

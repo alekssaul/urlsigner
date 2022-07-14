@@ -28,6 +28,17 @@ Move the certificate files into terraform assets folder
 mv *.key ./deploy/terraform/assets/
 ```
 
+## Generate TLS Certificates
+
+Review https://cloud.google.com/media-cdn/docs/ssl-certificates page to understand how Media CDN uses SSL certificates. 
+If self-managing certificates obtain certificates (i.e. Verisign, Let's Encrypt etc) and inset them into Certificate Manager by following https://cloud.google.com/media-cdn/docs/configure-ssl-certificates#self-managed-cert 
+
+```sh
+gcloud certificate-manager certificates describe $certname --format=json | jq '.name' -r
+```
+
+Running above command will provide you the location of the certificate to be referred by `certificatemanager_certificate_location` variable in Terraform
+
 ## Deploy Media CDN Infrastructure
 
 `deploy/terraform` folder contains terraform specs to bootstrap a test infrastructure for Media CDN.

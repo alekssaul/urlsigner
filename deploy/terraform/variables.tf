@@ -25,3 +25,12 @@ variable "domain_name" {
   type        = string
   description = "Domain name to be used for CME setup"
 }
+
+variable "certificatemanager_certificate_location" {
+  type = string
+  description = <<EOT
+  Location of certificate manager cert for Media CDN TLS. Can be obtained by
+  `gcloud certificate-manager certificates describe $certname --format=json | jq '.name' -r`
+  EOT
+  
+}
