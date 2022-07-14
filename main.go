@@ -110,6 +110,7 @@ func stringToUnix(s string) (t time.Time, e error) {
 	return tm, nil
 }
 
+// signURL - Based almost the same as https://gist.github.com/mlevkov/8d1a481992494210cb2e5cc3a1c05221#file-signedrequests_modified-go-L42-L50
 func signUrl(config AppConfig, url string, expiration time.Time) (signedurl string) {
 	sep := '?'
 	if strings.ContainsRune(url, '?') {

@@ -21,12 +21,18 @@ resource "google_project_service" "edgecache" {
   disable_on_destroy = false
 }
 
+resource "google_project_service" "secretmanager" {
+  project            = data.google_project.project.id
+  service            = "secretmanager.googleapis.com"
+  disable_on_destroy = false
+}
+
 # Media CDN Keyset
 resource "random_string" "key_id" {
   length  = 16
   special = false
-  number = false
-  upper = false
+  numeric  = false
+  upper   = false
 }
 
 resource "google_network_services_edge_cache_keyset" "default" {
@@ -124,4 +130,32 @@ resource "google_storage_bucket_iam_member" "mediaedge_acl" {
   bucket = google_storage_bucket.origin.name
   role   = "roles/storage.objectViewer"
   member = format("serviceAccount:service-%s@gcp-sa-mediaedgefill.iam.gserviceaccount.com", data.google_project.project.number)
+}
+
+# Secret Manager
+resource "google_secret_manager_secret" "keyset_primary_private" {
+  secret_id = "keyset_primary_private"
+
+  replication {
+    automatic = true
+  }
+
+  depends_on = [
+    google_project_service.secretmanager
+  ]
+}
+
+resource "google_secret_manager_secret_version" "keyset_primary_private_version" {
+  secret      = google_secret_manager_secret.keyset_primary_private.id
+  secret_data = file("${path.module}/assets/private.key")
+}
+
+data "google_secret_manager_secret_version" "keyset_primary_private_version" {
+  secret = google_secret_manager_secret.keyset_primary_private.id
+}
+
+resource "google_secret_manager_secret_iam_member" "cloud_run" {
+  secret_id = google_secret_manager_secret.keyset_primary_private.secret_id
+  role = "roles/secretmanager.secretAccessor"
+  member = format("serviceAccount:%s-compute@developer.gserviceaccount.com",data.google_project.project.number)
 }

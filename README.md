@@ -54,13 +54,13 @@ terrform apply
 Set the KEYSET and PRIVATEKEY environmental variable to output of terraform
 
 ```sh
-KEYSET=$(terraform output --raw keyset)
-PRIVATEKEY=$(cat assets/private.key)
+export KEYSET=$(terraform output --raw keyset)
+export PRIVATEKEY=$(terraform output --raw keyset_primary_private)
 ```
 
 Deploy the service to cloud run
 
 ```sh
-gcloud run deploy --set-env-vars=KEYSET=$KEYSET,PRIVATEKEY=$PRIVATEKEY
+gcloud run deploy --set-env-vars=KEYSET=$KEYSET  --update-secrets=PRIVATEKEY=$PRIVATEKEY
 ```
 
